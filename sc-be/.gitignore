@@ -1,0 +1,57 @@
+# ==========================================
+# Python (Backend)
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.sqlite3
+*.db
+.pytest_cache/
+.cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Uploads / Media (Backend uploads)
+app/uploads/*
+!app/uploads/.gitkeep
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+
+# ==========================================
+# Editors & IDEs
+# ==========================================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ==========================================
+# Operating System files
+# ==========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ==========================================
+# Miscellaneous
+# ==========================================
+logs/
+*.log
+*.pid
