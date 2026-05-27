@@ -1,5 +1,15 @@
 services:
 
+  frontend:
+    build: ./sc-fe
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      - backend
+
+
   backend:
     build: ./sc-be
 
@@ -14,6 +24,7 @@ services:
 
     depends_on:
       - db
+
 
   db:
     image: postgres:15
@@ -30,6 +41,7 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
 
 volumes:
   postgres_data:
