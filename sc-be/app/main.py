@@ -16,6 +16,8 @@ from app.database import get_db
 from app.models.video import Video
 from app.models.user import User
 
+from app.tasks import process_video
+
 from app.utils.auth import (
     hash_password,
     verify_password,
@@ -173,6 +175,8 @@ def upload_media(
     db.add(media)
     db.commit()
     db.refresh(media)
+
+    process_video.delay(media.id)
 
     return {
         "message": "Upload successful",
