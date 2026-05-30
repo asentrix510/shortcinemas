@@ -8,74 +8,105 @@ function App() {
   const [progress, setProgress] = useState(0);
   const [mediaList, setMediaList] = useState([]);
 
-  // Fetch uploaded media
   const fetchMedia = async () => {
 
     try {
 
-      const response = await axios.get(
-        "http://127.0.0.1:8000/videos"
+      const response =
+        await axios.get("/api/videos");
+
+      console.log(response.data);
+
+      setMediaList(
+        response.data.videos
       );
 
-      setMediaList(response.data);
-
     } catch (error) {
+
       console.log(error);
+
     }
+
   };
 
-  // Run once when page loads
   useEffect(() => {
+
     fetchMedia();
+
   }, []);
 
-  // Upload media
   const uploadMedia = async () => {
 
     if (!file || !title) {
-      alert("Please select file and enter title");
+
+      alert(
+        "Please enter title and select file"
+      );
+
       return;
     }
 
-    const formData = new FormData();
+    const formData =
+      new FormData();
 
-    formData.append("title", title);
-    formData.append("file", file);
+    formData.append(
+      "title",
+      title
+    );
+
+    formData.append(
+      "file",
+      file
+    );
 
     try {
 
       await axios.post(
-        "http://127.0.0.1:8000/upload",
+        "/api/upload",
         formData,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type":
+              "multipart/form-data"
           },
 
-          onUploadProgress: (progressEvent) => {
+          onUploadProgress: (
+            progressEvent
+          ) => {
 
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) /
-              progressEvent.total
+            const percent =
+              Math.round(
+                (
+                  progressEvent.loaded *
+                  100
+                ) /
+                progressEvent.total
+              );
+
+            setProgress(
+              percent
             );
 
-            setProgress(percentCompleted);
-          },
+          }
         }
       );
 
-      // Reset fields
-      setTitle("");
       setFile(null);
+      setTitle("");
       setProgress(0);
 
-      // Refresh uploaded media
       fetchMedia();
 
     } catch (error) {
+
       console.log(error);
-      alert("Upload failed");
+
+      alert(
+        "Upload failed"
+      );
+
     }
+
   };
 
   return (
@@ -86,45 +117,49 @@ function App() {
         ShortCinemas
       </h1>
 
-      {/* Upload Section */}
-
       <div className="bg-gray-900 p-6 rounded-xl max-w-lg flex flex-col gap-4">
 
         <input
           type="text"
           placeholder="Enter title"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="p-3 rounded bg-gray-800 border border-gray-700"
+          onChange={(e) =>
+            setTitle(e.target.value)
+          }
+          className="p-3 rounded bg-gray-800"
         />
 
         <input
           type="file"
-          onChange={(e) => setFile(e.target.files[0])}
-          className="p-2"
+          onChange={(e) =>
+            setFile(
+              e.target.files[0]
+            )
+          }
         />
 
         <button
           onClick={uploadMedia}
-          className="bg-red-500 hover:bg-red-600 transition px-5 py-3 rounded font-semibold"
+          className="bg-red-500 p-3 rounded"
         >
           Upload
         </button>
 
-        {/* Progress Bar */}
-
         <div>
 
-          <p className="mb-2">
-            Upload Progress: {progress}%
+          <p>
+            Upload Progress:
+            {" "}
+            {progress}%
           </p>
 
-          <div className="w-full bg-gray-700 h-4 rounded">
+          <div className="bg-gray-700 h-4 rounded">
 
             <div
               className="bg-green-500 h-4 rounded"
               style={{
-                width: `${progress}%`
+                width:
+                  `${progress}%`
               }}
             />
 
@@ -134,67 +169,74 @@ function App() {
 
       </div>
 
-      {/* Uploaded Media Section */}
-
-      <h2 className="text-3xl font-bold mt-16 mb-8">
+      <h2 className="text-3xl font-bold mt-10 mb-6">
         Uploaded Media
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {mediaList.map((media) => (
+        {mediaList.map(
+          (media) => (
 
-          <div
-            key={media.id}
-            className="bg-gray-900 p-4 rounded-xl"
-          >
+            <div
+              key={media.id}
+              className="bg-gray-900 p-4 rounded"
+            >
 
-            {/* VIDEO */}
+              {media.media_type ===
+              "video" ? (
 
-            {media.media_type === "video" ? (
+                <video
+                  controls
+                  className="w-full"
+                >
 
-              <video
-                controls
-                className="w-full rounded-lg"
-              >
-                <source
-                  src={`http://127.0.0.1:8000/uploads/${media.filename}`}
-                  type="video/mp4"
+                  <source
+                    src={`/api/uploads/${media.filename}`}
+                    type="video/mp4"
+                  />
+
+                </video>
+
+              ) : (
+
+                <img
+                  src={`/api/uploads/${media.filename}`}
+                  alt={media.title}
+                  className="w-full"
                 />
-              </video>
 
-            ) : (
+              )}
 
-              /* IMAGE */
+              <h3 className="mt-4 text-xl">
 
-              <img
-                src={`http://127.0.0.1:8000/uploads/${media.filename}`}
-                alt={media.title}
-                className="w-full rounded-lg"
-              />
+                {media.title}
 
-            )}
+              </h3>
 
-            <h3 className="text-xl font-semibold mt-4">
-              {media.title}
-            </h3>
+              <p>
+                Type:
+                {" "}
+                {media.media_type}
+              </p>
 
-            <p className="text-gray-400">
-              Type: {media.media_type}
-            </p>
+              <p>
+                Status:
+                {" "}
+                {media.status}
+              </p>
 
-            <p className="text-gray-400">
-              Status: {media.status}
-            </p>
+            </div>
 
-          </div>
-
-        ))}
+          )
+        )}
 
       </div>
 
     </div>
+
   );
+
 }
 
 export default App;

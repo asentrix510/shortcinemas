@@ -1,32 +1,53 @@
-from fastapi import FastAPI, Depends, UploadFile, File
-from sqlalchemy.orm import Session
-from app.database import Base, engine, get_db
-from app.models.user import User
-from app.models.video import Video
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+from fastapi import Depends
+from fastapi import UploadFile
+from fastapi import File
 from fastapi import Form
+
+from sqlalchemy.orm import Session
+
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+from app.database import Base
+from app.database import engine
+from app.database import get_db
+
+from app.models.video import Video
+from app.models.user import User
+
 from app.utils.auth import (
     hash_password,
     verify_password,
     create_access_token
 )
+
+import os
 import shutil
+
+INSTANCE_NAME = os.getenv(
+    "INSTANCE_NAME",
+    "unknown"
+)
 
 Base.metadata.create_all(bind=engine)
 
+os.makedirs(
+    "app/uploads",
+    exist_ok=True
+)
+
 app = FastAPI()
+
 app.mount(
     "/uploads",
     StaticFiles(directory="app/uploads"),
     name="uploads"
 )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,17 +55,24 @@ app.add_middleware(
 
 @app.get("/")
 def home():
+
     return {
-        "message": "ShortCinemas Backend Running"
+        "message": "ShortCinemas Backend Running",
+        "instance": INSTANCE_NAME
     }
 
 @app.post("/register")
-def register(data: dict, db: Session = Depends(get_db)):
+def register(
+    data: dict,
+    db: Session = Depends(get_db)
+):
 
     user = User(
         username=data["username"],
         email=data["email"],
-        password=hash_password(data["password"])
+        password=hash_password(
+            data["password"]
+        )
     )
 
     db.add(user)
@@ -55,24 +83,33 @@ def register(data: dict, db: Session = Depends(get_db)):
     }
 
 @app.post("/login")
-def login(data: dict, db: Session = Depends(get_db)):
+def login(
+    data: dict,
+    db: Session = Depends(get_db)
+):
 
     user = db.query(User).filter(
         User.email == data["email"]
     ).first()
 
     if not user:
-        return {"error": "Invalid email"}
+        return {
+            "error": "Invalid email"
+        }
 
     if not verify_password(
         data["password"],
         user.password
     ):
-        return {"error": "Wrong password"}
+        return {
+            "error": "Wrong password"
+        }
 
-    token = create_access_token({
-        "user_id": user.id
-    })
+    token = create_access_token(
+        {
+            "user_id": user.id
+        }
+    )
 
     return {
         "access_token": token
@@ -85,33 +122,44 @@ def upload_media(
     db: Session = Depends(get_db)
 ):
 
-    allowed_image_types = [
+    allowed_images = [
         "image/jpeg",
         "image/png",
         "image/webp"
     ]
 
-    allowed_video_types = [
+    allowed_videos = [
         "video/mp4",
         "video/webm"
     ]
 
     if (
-        file.content_type not in allowed_image_types
-        and file.content_type not in allowed_video_types
+        file.content_type not in allowed_images
+        and
+        file.content_type not in allowed_videos
     ):
         return {
             "error": "Unsupported file type"
         }
 
-    file_location = f"app/uploads/{file.filename}"
+    file_location = (
+        f"app/uploads/{file.filename}"
+    )
 
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    with open(
+        file_location,
+        "wb"
+    ) as buffer:
+
+        shutil.copyfileobj(
+            file.file,
+            buffer
+        )
 
     media_type = (
         "image"
-        if file.content_type in allowed_image_types
+        if file.content_type
+        in allowed_images
         else "video"
     )
 
@@ -124,27 +172,33 @@ def upload_media(
 
     db.add(media)
     db.commit()
+    db.refresh(media)
 
     return {
         "message": "Upload successful",
-        "filename": file.filename,
-        "media_type": media_type
+        "instance": INSTANCE_NAME
     }
 
 @app.get("/videos")
-def get_videos(db: Session = Depends(get_db)):
+def get_videos(
+    db: Session = Depends(get_db)
+):
 
     videos = db.query(Video).all()
 
     result = []
 
     for video in videos:
-        result.append({
-    "id": video.id,
-    "title": video.title,
-    "filename": video.filename,
-    "media_type": video.media_type,
-    "status": video.status
-})
 
-    return result
+        result.append({
+            "id": video.id,
+            "title": video.title,
+            "filename": video.filename,
+            "media_type": video.media_type,
+            "status": video.status
+        })
+
+    return {
+        "handled_by": INSTANCE_NAME,
+        "videos": result
+    }
